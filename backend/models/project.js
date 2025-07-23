@@ -1,29 +1,23 @@
 import pool from '../config/database.js';
 
 class Project {
-  // Helper method to handle image data
   static prepareImageData(imageData) {
     if (!imageData) return null;
-    
-    // If it's already a buffer, return as-is
+  
     if (Buffer.isBuffer(imageData)) return imageData;
     
-    // If it's a string data URL, extract the base64 part
     if (typeof imageData === 'string') {
-      // Check if it's a data URL
       if (imageData.startsWith('data:')) {
         const base64Data = imageData.split(',')[1];
         if (!base64Data) return null;
         return Buffer.from(base64Data, 'base64');
       }
-      // If it's already a base64 string
       return Buffer.from(imageData, 'base64');
     }
     
     return null;
   }
 
-  // Get all projects (excluding deleted)
   static async getAll() {
     const result = await pool.query(
       `SELECT id, project_name, start_date, end_date, description, technologies, 
@@ -39,7 +33,6 @@ class Project {
     return result.rows;
   }
 
-  // Get project by ID (excluding deleted)
   static async getById(id) {
     const result = await pool.query(
       `SELECT id, project_name, start_date, end_date, description, technologies,
@@ -55,7 +48,6 @@ class Project {
     return result.rows[0];
   }
 
-  // Create new project
   static async create(projectData) {
     const {
       project_name,
@@ -94,7 +86,6 @@ class Project {
     return result.rows[0];
   }
 
-  // Update project
   static async update(id, projectData) {
     const {
       project_name,
@@ -112,7 +103,7 @@ class Project {
       if (Array.isArray(technologies)) {
         technologiesJson = JSON.stringify(technologies);
       } else if (typeof technologies === 'string') {
-        JSON.parse(technologies); // validate JSON string
+        JSON.parse(technologies);
         technologiesJson = technologies;
       } else {
         throw new Error('Invalid technologies format');
