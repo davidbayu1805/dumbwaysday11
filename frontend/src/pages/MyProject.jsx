@@ -425,7 +425,7 @@ const MyProject = () => {
         popup: "rounded-lg text-left",
       },
       showConfirmButton: false,
-      showCloseButton: true,
+      showCloseButton: false,
       focusConfirm: false,
     });
   };

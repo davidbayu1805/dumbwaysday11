@@ -33,8 +33,7 @@ class AuthService {
       });
       
       const data = await this.handleResponse(response);
-      
-      // Trigger auth change event
+ 
       window.dispatchEvent(new Event('authChange'));
       
       return data;
@@ -55,8 +54,7 @@ class AuthService {
       });
       
       const data = await this.handleResponse(response);
-      
-      // Trigger auth change event
+ 
       window.dispatchEvent(new Event('authChange'));
       
       return data;
