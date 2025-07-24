@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import Swal from "sweetalert2";
 import "remixicon/fonts/remixicon.css";
-import ProjectService from "../services/pojectServices.js";
+import ProjectService from "../services/projectServices.js";
+import AuthService from "../services/authService.js";
 
 const techIcons = {
   "React Js": "ri-reactjs-line",
@@ -21,10 +22,26 @@ const MyProject = () => {
     technologies: [],
     image: null,
   });
+  const [currentUser, setCurrentUser] = useState(null);
 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Authentication Required',
+        text: 'Please login to access My Projects',
+        confirmButtonText: 'Go to Login'
+      }).then(() => {
+        window.location.href = '/login';
+      });
+      return;
+    }
+
+    setCurrentUser(user);
     loadProjects();
   }, []);
 
@@ -45,6 +62,10 @@ const MyProject = () => {
         setProjects(transformedProjects);
       }
     } catch (error) {
+      if (error.message.includes('Session expired')) {
+        handleSessionExpired();
+        return;
+      }
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -53,6 +74,18 @@ const MyProject = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSessionExpired = () => {
+    AuthService.logout();
+    Swal.fire({
+      icon: 'warning',
+      title: 'Session Expired',
+      text: 'Your session has expired. Please login again.',
+      confirmButtonText: 'Login'
+    }).then(() => {
+      window.location.href = '/login';
+    });
   };
 
   const handleChange = async (e) => {
@@ -127,7 +160,8 @@ const MyProject = () => {
         end_date: form.end_date || null,
         description: form.description || null,
         technologies: form.technologies,
-        image: form.image, // Send the full base64 data URL
+        image: form.image,
+        user_id: currentUser.id
       };
 
       const response = await ProjectService.createProject(projectData);
@@ -158,6 +192,10 @@ const MyProject = () => {
         await loadProjects();
       }
     } catch (error) {
+      if (error.message.includes('Session expired')) {
+        handleSessionExpired();
+        return;
+      }
       console.error('Submission error:', error);
       Swal.fire({
         icon: 'error',
@@ -328,6 +366,10 @@ const MyProject = () => {
             await loadProjects();
           }
         } catch (error) {
+          if (error.message.includes('Session expired')) {
+            handleSessionExpired();
+            return;
+          }
           Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -398,6 +440,14 @@ const MyProject = () => {
           <i className="ri-loader-4-line animate-spin mr-2"></i>
           Loading...
         </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-xl">Redirecting to login...</div>
       </div>
     );
   }

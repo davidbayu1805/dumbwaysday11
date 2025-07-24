@@ -2,6 +2,7 @@ import express, { json, urlencoded } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import projectRoutes from './routes/project.js';
+import authRoutes from './routes/auth.js'
 
 dotenv.config();
 
@@ -13,7 +14,7 @@ app.use(cors());
 app.use(json({ limit: '50mb' }));
 app.use(urlencoded({ extended: true }));
 
-
+app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 
 app.get('/', (req, res) => {

@@ -1,9 +1,24 @@
-// services/projectService.js
+// services/projectServices.js
+import AuthService from './authService';
+
 const API_BASE_URL = 'http://localhost:3000/api/projects';
 
 class ProjectService {
-  // Helper method to handle response
+  static getAuthHeader() {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': token,
+      'Content-Type': 'application/json'
+    };
+  }
+
   static async handleResponse(response) {
+    if (response.status === 401) {
+      // Token expired or invalid
+      AuthService.logout();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       let errorMessage = 'Something went wrong';
       
@@ -24,10 +39,12 @@ class ProjectService {
     return response.json();
   }
 
-  // Get all projects
+  // Get all projects for the logged in user
   static async getAllProjects() {
     try {
-      const response = await fetch(API_BASE_URL);
+      const response = await fetch(API_BASE_URL, {
+        headers: this.getAuthHeader()
+      });
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -38,7 +55,9 @@ class ProjectService {
   // Get project by ID
   static async getProjectById(id) {
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`);
+      const response = await fetch(`${API_BASE_URL}/${id}`, {
+        headers: this.getAuthHeader()
+      });
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`Error fetching project ${id}:`, error);
@@ -57,9 +76,7 @@ class ProjectService {
 
       const response = await fetch(API_BASE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeader(),
         body: JSON.stringify(payload),
       });
       
@@ -75,9 +92,7 @@ class ProjectService {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeader(),
         body: JSON.stringify({
           ...projectData,
           image: projectData.image || null
@@ -96,6 +111,7 @@ class ProjectService {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
+        headers: this.getAuthHeader()
       });
       
       return await this.handleResponse(response);
@@ -110,6 +126,7 @@ class ProjectService {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}/permanent`, {
         method: 'DELETE',
+        headers: this.getAuthHeader()
       });
       
       return await this.handleResponse(response);
@@ -124,6 +141,7 @@ class ProjectService {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}/restore`, {
         method: 'POST',
+        headers: this.getAuthHeader()
       });
       
       return await this.handleResponse(response);
@@ -136,7 +154,9 @@ class ProjectService {
   // Get deleted projects
   static async getDeletedProjects() {
     try {
-      const response = await fetch(`${API_BASE_URL}/deleted`);
+      const response = await fetch(`${API_BASE_URL}/deleted`, {
+        headers: this.getAuthHeader()
+      });
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Error fetching deleted projects:', error);

@@ -18,31 +18,57 @@ class Project {
     return null;
   }
 
-  static async getAll() {
-    const result = await pool.query(
-      `SELECT id, project_name, start_date, end_date, description, technologies, 
-              CASE 
-                WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
-                ELSE NULL 
-              END as image,
-              created_at, updated_at
-       FROM projects 
-       WHERE deleted_at IS NULL 
-       ORDER BY created_at DESC`
-    );
+  static async getAll(userId = null) {
+    let query = `SELECT 
+                  p.id, 
+                  p.project_name, 
+                  p.start_date, 
+                  p.end_date, 
+                  p.description, 
+                  p.technologies, 
+                  CASE 
+                    WHEN p.image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(p.image, 'base64'))
+                    ELSE NULL 
+                  END as image,
+                  p.created_at, 
+                  p.updated_at,
+                  u.username as author
+                FROM projects p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.deleted_at IS NULL`;
+    
+    const params = [];
+    
+    if (userId) {
+      query += ` AND p.user_id = $1`;
+      params.push(userId);
+    }
+    
+    query += ` ORDER BY p.created_at DESC`;
+    
+    const result = await pool.query(query, params);
     return result.rows;
   }
 
   static async getById(id) {
     const result = await pool.query(
-      `SELECT id, project_name, start_date, end_date, description, technologies,
-              CASE 
-                WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
-                ELSE NULL 
-              END as image,
-              created_at, updated_at
-       FROM projects 
-       WHERE id = $1 AND deleted_at IS NULL`,
+      `SELECT 
+        p.id, 
+        p.project_name, 
+        p.start_date, 
+        p.end_date, 
+        p.description, 
+        p.technologies,
+        CASE 
+          WHEN p.image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(p.image, 'base64'))
+          ELSE NULL 
+        END as image,
+        p.created_at, 
+        p.updated_at,
+        u.username as author
+      FROM projects p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.id = $1 AND p.deleted_at IS NULL`,
       [id]
     );
     return result.rows[0];
@@ -55,7 +81,8 @@ class Project {
       end_date,
       description,
       technologies,
-      image
+      image,
+      user_id
     } = projectData;
 
     const preparedImage = this.prepareImageData(image);
@@ -66,8 +93,8 @@ class Project {
 
     const result = await pool.query(
       `INSERT INTO projects 
-       (project_name, start_date, end_date, description, technologies, image) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+       (project_name, start_date, end_date, description, technologies, image, user_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING id, project_name, start_date, end_date, description, technologies,
                  CASE 
                    WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
@@ -80,7 +107,8 @@ class Project {
         end_date, 
         description, 
         technologiesJson,
-        preparedImage
+        preparedImage,
+        user_id
       ]
     );
     return result.rows[0];
@@ -144,12 +172,7 @@ class Project {
       `UPDATE projects 
        SET deleted_at = CURRENT_TIMESTAMP 
        WHERE id = $1 AND deleted_at IS NULL
-       RETURNING id, project_name, start_date, end_date, description, technologies,
-                 CASE 
-                   WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
-                   ELSE NULL 
-                 END as image,
-                 created_at, updated_at, deleted_at`,
+       RETURNING id, project_name`,
       [id]
     );
     return result.rows[0];
@@ -160,12 +183,7 @@ class Project {
       `UPDATE projects 
        SET deleted_at = NULL 
        WHERE id = $1
-       RETURNING id, project_name, start_date, end_date, description, technologies,
-                 CASE 
-                   WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
-                   ELSE NULL 
-                 END as image,
-                 created_at, updated_at`,
+       RETURNING id, project_name`,
       [id]
     );
     return result.rows[0];
@@ -181,15 +199,48 @@ class Project {
 
   static async getDeleted() {
     const result = await pool.query(
-      `SELECT id, project_name, start_date, end_date, description, technologies,
-              CASE 
-                WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
-                ELSE NULL 
-              END as image,
-              created_at, updated_at, deleted_at
-       FROM projects 
-       WHERE deleted_at IS NOT NULL 
-       ORDER BY deleted_at DESC`
+      `SELECT 
+        p.id, 
+        p.project_name, 
+        p.start_date, 
+        p.end_date, 
+        p.description, 
+        p.technologies,
+        CASE 
+          WHEN p.image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(p.image, 'base64'))
+          ELSE NULL 
+        END as image,
+        p.created_at, 
+        p.updated_at, 
+        p.deleted_at,
+        u.username as author
+      FROM projects p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.deleted_at IS NOT NULL 
+      ORDER BY p.deleted_at DESC`
+    );
+    return result.rows;
+  }
+
+  static async getUserProjects(userId) {
+    const result = await pool.query(
+      `SELECT 
+        id, 
+        project_name, 
+        start_date, 
+        end_date, 
+        description, 
+        technologies,
+        CASE 
+          WHEN image IS NOT NULL THEN CONCAT('data:image/jpeg;base64,', encode(image, 'base64'))
+          ELSE NULL 
+        END as image,
+        created_at, 
+        updated_at
+      FROM projects
+      WHERE user_id = $1 AND deleted_at IS NULL
+      ORDER BY created_at DESC`,
+      [userId]
     );
     return result.rows;
   }
