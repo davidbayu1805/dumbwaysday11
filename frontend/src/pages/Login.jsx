@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AuthService from '../services/authService';
 import Swal from 'sweetalert2';
 
@@ -12,13 +12,28 @@ const LoginSignupForm = () => {
   const [registerData, setRegisterData] = useState({ 
     username: '', 
     email: '', 
-    password: '' 
+    password: '',
+    confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleRegisterClick = () => setIsActive(true);
-  const handleLoginClick = () => setIsActive(false);
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const mode = searchParams.get('mode');
+    setIsActive(mode === 'register');
+  }, [location]);
+
+  const handleRegisterClick = () => {
+    setIsActive(true);
+    navigate('/login?mode=register', { replace: true });
+  };
+
+  const handleLoginClick = () => {
+    setIsActive(false);
+    navigate('/login', { replace: true });
+  };
 
   const handleLoginChange = (e) => {
     const { name, value } = e.target;
@@ -37,22 +52,20 @@ const LoginSignupForm = () => {
     try {
       const { username, password } = loginData;
       const response = await AuthService.login(username, password);
-      
-      // Simpan token dan user data ke localStorage
+    
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Tampilkan notifikasi sukses
       await Swal.fire({
         icon: 'success',
         title: 'Login Success',
         text: 'Welcome back!',
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
-      
-      // Redirect ke halaman myproject
-      navigate('/myproject');
+ 
+      const from = location.state?.from?.pathname || '/myproject';
+      navigate(from, { replace: true });
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -69,30 +82,30 @@ const LoginSignupForm = () => {
     setIsLoading(true);
     
     try {
-      const { username, email, password } = registerData;
+      const { username, email, password, confirmPassword } = registerData;
+    
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
       
-      // Validasi password minimal 6 karakter
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters');
       }
       
       const response = await AuthService.register(username, email, password);
-      
-      // Simpan token dan user data ke localStorage
+  
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Tampilkan notifikasi sukses
       await Swal.fire({
         icon: 'success',
         title: 'Registration Success',
         text: 'Your account has been created!',
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
-      
-      // Redirect ke halaman myproject
-      navigate('/myproject');
+    
+      navigate('/myproject', { replace: true });
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -107,8 +120,7 @@ const LoginSignupForm = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-gray-200 to-blue-200 font-sans">
       <div className={`relative w-[850px] max-w-[90vw] h-[550px] max-h-[calc(100vh-40px)] bg-white m-5 rounded-[30px] shadow-[0_0_30px_rgba(0,0,0,0.2)] overflow-hidden transition-all duration-1000 ${isActive ? 'md:h-[550px]' : ''}`}>
-        
-        {/* Login Form */}
+   
         <form onSubmit={handleLoginSubmit}>
           <div className={`absolute ${isActive ? 'right-1/2' : 'right-0'} w-full md:w-1/2 h-full bg-white flex items-center text-gray-700 text-center p-10 z-10 transition-all duration-700 ease-in-out ${isActive ? 'delay-1200' : 'delay-0'} ${isActive ? 'md:right-1/2' : 'md:right-0'} max-md:${isActive ? 'bottom-[30%]' : 'bottom-0'} max-md:h-[70%] max-md:w-full`}>
             <div className="w-full">
@@ -169,7 +181,6 @@ const LoginSignupForm = () => {
           </div>
         </form>
 
-        {/* Register Form */}
         <form onSubmit={handleRegisterSubmit}>
           <div className={`absolute right-0 w-full md:w-1/2 h-full bg-white flex items-center text-gray-700 text-center p-10 z-10 transition-all duration-700 ease-in-out ${isActive ? 'visible delay-0' : 'invisible delay-1000'} ${isActive ? 'md:right-1/2' : 'md:right-0'} max-md:${isActive ? 'bottom-[30%]' : 'bottom-0'} max-md:h-[70%] max-md:w-full`}>
             <div className="w-full">
@@ -214,6 +225,20 @@ const LoginSignupForm = () => {
                 />
                 <i className="absolute right-5 top-1/2 transform -translate-y-1/2 text-xl">🔒</i>
               </div>
+
+              <div className="relative my-8">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm Password"
+                  required
+                  minLength="6"
+                  value={registerData.confirmPassword}
+                  onChange={handleRegisterChange}
+                  className="w-full py-3 px-5 pr-12 bg-gray-100 rounded-lg border-none outline-none text-base text-gray-700 font-medium placeholder-gray-500"
+                />
+                <i className="absolute right-5 top-1/2 transform -translate-y-1/2 text-xl">🔒</i>
+              </div>
               
               <button
                 type="submit"
@@ -240,12 +265,10 @@ const LoginSignupForm = () => {
           </div>
         </form>
 
-        {/* Toggle Box Background */}
         <div className="absolute w-full h-full">
           <div className={`absolute ${isActive ? 'left-1/2' : '-left-[250%]'} w-[300%] h-full bg-blue-400 rounded-[150px] z-20 transition-all duration-[1.8s] ease-in-out max-md:${isActive ? 'top-[70%]' : '-top-[270%]'} max-md:left-0 max-md:w-full max-md:h-[300%] max-md:rounded-[20vw]`}></div>
         </div>
 
-        {/* Toggle Left Panel */}
         <div className={`absolute ${isActive ? '-left-1/2' : 'left-0'} w-full md:w-1/2 h-full text-white flex flex-col justify-center items-center z-20 transition-all duration-700 ease-in-out ${isActive ? 'delay-700' : 'delay-1200'} max-md:w-full max-md:h-[30%] max-md:top-0 max-md:${isActive ? '-top-[30%]' : 'top-0'} max-md:left-0`}>
           <h1 className="text-4xl max-md:text-3xl font-semibold mb-4">Hello, Welcome!</h1>
           <p className="text-sm mb-5">Don't have an account?</p>
@@ -257,7 +280,6 @@ const LoginSignupForm = () => {
           </button>
         </div>
 
-        {/* Toggle Right Panel */}
         <div className={`absolute ${isActive ? 'right-0' : '-right-1/2'} w-full md:w-1/2 h-full text-white flex flex-col justify-center items-center z-20 transition-all duration-700 ease-in-out ${isActive ? 'delay-1200' : 'delay-700'} max-md:w-full max-md:h-[30%] max-md:right-0 max-md:${isActive ? 'bottom-0' : '-bottom-[30%]'}`}>
           <h1 className="text-4xl max-md:text-3xl font-semibold mb-4">Welcome Back!</h1>
           <p className="text-sm mb-5">Already have an account?</p>

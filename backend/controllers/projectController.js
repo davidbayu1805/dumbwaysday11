@@ -335,7 +335,6 @@ const projectController = {
 
       const { id } = req.params;
       
-      // Verifikasi kepemilikan project sebelum permanent delete
       const existingProject = await Project.getById(id);
       if (!existingProject) {
         return res.status(404).json({

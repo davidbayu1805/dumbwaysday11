@@ -1,4 +1,3 @@
-// services/projectServices.js
 import AuthService from './authService';
 
 const API_BASE_URL = 'http://localhost:3000/api/projects';
@@ -14,7 +13,6 @@ class ProjectService {
 
   static async handleResponse(response) {
     if (response.status === 401) {
-      // Token expired or invalid
       AuthService.logout();
       throw new Error('Session expired. Please login again.');
     }
@@ -39,7 +37,6 @@ class ProjectService {
     return response.json();
   }
 
-  // Get all projects for the logged in user
   static async getAllProjects() {
     try {
       const response = await fetch(API_BASE_URL, {
@@ -52,7 +49,6 @@ class ProjectService {
     }
   }
 
-  // Get project by ID
   static async getProjectById(id) {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
@@ -65,10 +61,8 @@ class ProjectService {
     }
   }
 
-  // Create new project with better image handling
   static async createProject(projectData) {
     try {
-      // Process image data if exists
       const payload = {
         ...projectData,
         image: projectData.image || null
@@ -87,7 +81,6 @@ class ProjectService {
     }
   }
 
-  // Update project with improved error handling
   static async updateProject(id, projectData) {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
@@ -106,7 +99,6 @@ class ProjectService {
     }
   }
 
-  // Soft delete project
   static async deleteProject(id) {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
@@ -121,7 +113,6 @@ class ProjectService {
     }
   }
 
-  // Hard delete project (permanent)
   static async permanentDeleteProject(id) {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}/permanent`, {
@@ -136,7 +127,6 @@ class ProjectService {
     }
   }
 
-  // Restore deleted project
   static async restoreProject(id) {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}/restore`, {
@@ -151,7 +141,6 @@ class ProjectService {
     }
   }
 
-  // Get deleted projects
   static async getDeletedProjects() {
     try {
       const response = await fetch(`${API_BASE_URL}/deleted`, {
@@ -164,7 +153,6 @@ class ProjectService {
     }
   }
 
-  // Improved file to base64 conversion
   static async fileToBase64(file) {
     return new Promise((resolve, reject) => {
       if (!file) {
@@ -172,13 +160,11 @@ class ProjectService {
         return;
       }
 
-      // Validate file type
       if (!file.type.match('image.*')) {
         reject(new Error('Only image files are allowed'));
         return;
       }
 
-      // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
         reject(new Error('File size must be less than 2MB'));
         return;
@@ -191,7 +177,6 @@ class ProjectService {
     });
   }
 
-  // Additional helper to get image preview URL
   static getImagePreviewUrl(imageData) {
     if (!imageData) return null;
     if (typeof imageData === 'string' && imageData.startsWith('data:')) {

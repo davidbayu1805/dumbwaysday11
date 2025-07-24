@@ -102,12 +102,10 @@ const MyProject = () => {
       const file = e.target.files[0];
       if (file) {
         try {
-          // Validate file type
           if (!file.type.match('image.*')) {
             throw new Error('Only image files are allowed (JPEG, PNG, etc.)');
           }
 
-          // Validate file size (max 2MB)
           if (file.size > 2 * 1024 * 1024) {
             throw new Error('File size must be less than 2MB');
           }
@@ -174,8 +172,7 @@ const MyProject = () => {
           timer: 1500,
           showConfirmButton: false,
         });
-        
-        // Reset form
+   
         setForm({
           project_name: "",
           start_date: "",
